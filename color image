@@ -12,8 +12,14 @@
 #define HALF_WINDOW (WINDOW_SIZE / 2)
 uint16_t image[IMAGE_HEIGHT * IMAGE_WIDTH];
 uint8_t rgb_image[IMAGE_HEIGHT][IMAGE_WIDTH][3];
+typedef struct
+{
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+} rgb;
 
-
+const cl_image_format img_format = {CL_RGBA, CL_UNORM_INT8};
 // void save_png(const char *filename, uint16_t *buffer, int width, int height) {
 //     FILE *fp = fopen(filename, "wb");
 //     if (!fp) {
@@ -121,6 +127,11 @@ void readImageBinary(const char *filename, int width, int height) {
 }
 
 int main() {
+
+  float range_min =  0.88; //cmap_min_val 0.875
+  float range_max =  0.97; // cmap_max_val 0.96
+  float range = range_max - range_min;
+  float rangeinv = 1 / range;
     // Initialize OpenCL
     cl_platform_id platform;
     clGetPlatformIDs(1, &platform, NULL);
@@ -235,6 +246,25 @@ for (int i = 0; i < IMAGE_HEIGHT; i++) {
     }
 }
 
+for(int i = 0; i < IMAGE_HEIGHT; i++) {
+    for(int j = 0; j < IMAGE_WIDTH; j++) {
+        image[i * IMAGE_WIDTH +j] = 255 - image[i * IMAGE_WIDTH +j];
+    }
+}
+uint8_t min_val = 255, max_val = 0;
+for (int i = 0; i < IMAGE_HEIGHT; i++) {
+    for (int j = 0; j < IMAGE_WIDTH; j++) {
+     if(image[i * IMAGE_WIDTH +j] < min_val)min_val = image[i * IMAGE_WIDTH +j];
+     if(image[i * IMAGE_WIDTH + j] > max_val) max_val = image[i * IMAGE_WIDTH + j];
+    }
+} 
+
+
+for (int i = 0; i < IMAGE_HEIGHT; i++) {
+    for (int j = 0; j < IMAGE_WIDTH; j++) {
+                image[i * IMAGE_WIDTH + j] = (image[i * IMAGE_WIDTH + j] - min_val) * 255 / (max_val - min_val);
+    }
+}
 
 /********************LUT Colorspce*************************/
 uint8_t lookup_table[256][3] =
@@ -495,28 +525,17 @@ uint8_t lookup_table[256][3] =
         {135, 0, 0},
         {131, 0, 0},
         {128, 0, 0}};
-/*********************************************************/
+for(int i = 0; i < IMAGE_HEIGHT; i++) {
+    for(int j = 0; j < IMAGE_WIDTH; j++) {
+        uint8_t r  = lookup_table[image[i * IMAGE_WIDTH + j]][0];
+        uint8_t g  = lookup_table[image[i * IMAGE_WIDTH + j]][1];
+        uint8_t b  = lookup_table[image[i * IMAGE_WIDTH + j]][2];
 
-for (int i = 0; i < IMAGE_HEIGHT; i++) {
-    for (int j = 0; j < IMAGE_WIDTH; j++) {
-        int pixelIndex = i * IMAGE_WIDTH + j;
-        uint16_t normalizedValue = image[pixelIndex];
-        uint8_t r = lookup_table[normalizedValue][0];
-        uint8_t g = lookup_table[normalizedValue][1];
-        uint8_t b = lookup_table[normalizedValue][2];
-        // Store the RGB values in an appropriate buffer or data structure.
-        // Define a 2D array to store RGB values
-
-// Populate the 2D array with RGB values
-
-        // Store RGB values in the 2D array
-        rgb_image[i][j][0] = r; // Red
+        rgb_image[i] [j][0] = r; // Red
         rgb_image[i][j][1] = g; // Green
-        rgb_image[i][j][2] = b; // Blue
+        rgb_image [i][j][2] = b; // Blue
     }
 }
-
-
     // Enqueue the kernel for execution
     clEnqueueNDRangeKernel(queue, convertKernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
     clEnqueueNDRangeKernel(queue, statsKernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, NULL);
@@ -540,8 +559,6 @@ save_rgb_png("output_image.png", (uint8_t *)rgb_image, IMAGE_WIDTH, IMAGE_HEIGHT
             
         }
     }
-
-
     // Cleanup and release OpenCL resources
     clReleaseMemObject(inputBuffer);
     clReleaseMemObject(sumBuffer);
