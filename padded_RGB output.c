@@ -24,55 +24,7 @@ typedef struct
   uint8_t b;
 } rgb;
 
-const cl_image_format img_format = {CL_RGBA, CL_UNORM_INT8};
-// void save_png(const char *filename, uint16_t *buffer, int width, int height) {
-//     FILE *fp = fopen(filename, "wb");
-//     if (!fp) {
-//         fprintf(stderr, "Failed to open file for writing: %s\n", filename);
-//         return;
-//     }
-
-//     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-//     if (!png) {
-//         fprintf(stderr, "Failed to create PNG write structure\n");
-//         fclose(fp);
-//         return;
-//     }
-
-//     png_infop info = png_create_info_struct(png);
-//     if (!info) {
-//         fprintf(stderr, "Failed to create PNG info structure\n");
-//         png_destroy_write_struct(&png, NULL);
-//         fclose(fp);
-//         return;
-//     }
-
-//     if (setjmp(png_jmpbuf(png))) {
-//         fprintf(stderr, "Error during PNG file write\n");
-//         png_destroy_write_struct(&png, &info);
-//         fclose(fp);
-//         return;
-//     }
-
-//     png_init_io(png, fp);
-//     // Set image information
-//     png_set_IHDR(png, info, width, height, 16, PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_NONE,
-//                  PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
-
-//     png_write_info(png, info);
-
-//     // Write image data
-//     for (int y = 0; y < height; y++) {
-//         png_write_row(png, (png_bytep)&buffer[y * width]);
-//     }
-
-//     // End write
-//     png_write_end(png, NULL);
-//     png_destroy_write_struct(&png, &info);
-//     fclose(fp);
-// }
-
-
+const cl_image_format img_format = {CL_RGB, CL_UNORM_INT8};
 void save_rgb_png(const char *filename, uint8_t *buffer, int width, int height) {
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
