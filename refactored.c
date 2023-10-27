@@ -71,8 +71,40 @@ int gpu_init() {
     // Create a command queue
     command_queue = clCreateCommandQueue(context, device, 0, &error);
     checkError(error, "clCreateCommandQueue");
-const char *source = "your_kernel_source_code_here";
-cl_program program = clCreateProgramWithSource(context, 1, &source, NULL, &error);
+const char *kernelFile = "kernel.cl"; // Replace with the correct file path
+FILE *file = fopen(kernelFile, "r");
+if (!file) {
+    perror("Failed to open kernel file");
+    exit(1);
+}
+
+// Get the size of the file
+fseek(file, 0, SEEK_END);
+size_t fileSize = ftell(file);
+rewind(file);
+
+// Allocate memory to store the kernel source
+char *source = (char *)malloc(fileSize + 1);
+if (!source) {
+    perror("Memory allocation error");
+    fclose(file);
+    exit(1);
+}
+
+// Read the source code from the file
+size_t bytesRead = fread(source, 1, fileSize, file);
+if (bytesRead != fileSize) {
+    perror("Failed to read kernel source");
+    fclose(file);
+    free(source);
+    exit(1);
+}
+
+source[fileSize] = '\0'; // Null-terminate the source code
+
+// Close the file
+fclose(file);
+cl_program program = createProgram(source, context, device);
 clBuildProgram(program, 1, &device, NULL, NULL, NULL);
 cl_kernel kernel = clCreateKernel(program, "your_kernel_function_name", &error);
 cl_mem buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(float) * data_size, NULL, &error);
