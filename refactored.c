@@ -132,47 +132,7 @@ void saveImageArrayAsBinary(const char *filename, unsigned char *imageArray, siz
 
     fclose(file);
 }
-void gpu_lsci(uint16_t buffer[BUFFER_SIZE]) {
-    cl_int error;
-    size_t global_size[2] = {wi, h}; // Set your global work size here
 
-    // Create OpenCL buffers for input and output data
-    cl_mem dev_buffer = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(uint16_t) * wi * h, buffer, &error);
-    cl_mem dev_zimg = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(float) * (wi + window_size - 1) * (h + window_size - 1), NULL, &error);
-
-    // Copy input data from the host to the device
-    error = clEnqueueWriteBuffer(command_queue, dev_buffer, CL_TRUE, 0, sizeof(uint16_t) * wi * h, buffer, 0, NULL, NULL);
-    checkError(error, "clEnqueueWriteBuffer");
-
-    // Compile the OpenCL kernel (replace "kernel_code" with your actual kernel code)
-    cl_program program = createProgram(kernel_code, context, device);
-
-    // Create a kernel from the compiled program
-    cl_kernel fillZeroPaddedArrayKernel = clCreateKernel(program, "fillZeroPaddedArray", &error);
-    checkError(error, "clCreateKernel");
-
-    // Set kernel arguments
-    clSetKernelArg(fillZeroPaddedArrayKernel, 0, sizeof(cl_mem), &dev_buffer);
-    clSetKernelArg(fillZeroPaddedArrayKernel, 1, sizeof(cl_mem), &dev_zimg);
-    clSetKernelArg(fillZeroPaddedArrayKernel, 2, sizeof(cl_int), &window_size);
-
-    // Enqueue the kernel for execution
-    error = clEnqueueNDRangeKernel(command_queue, fillZeroPaddedArrayKernel, 2, NULL, global_size, NULL, 0, NULL, NULL);
-    checkError(error, "clEnqueueNDRangeKernel");
-
-    // Wait for the kernel to finish
-    clFinish(command_queue);
-
-    // Copy the result back from the device to the host
-    error = clEnqueueReadBuffer(command_queue, dev_zimg, CL_TRUE, 0, sizeof(float) * (wi + window_size - 1) * (h + window_size - 1), zimg, 0, NULL, NULL);
-    checkError(error, "clEnqueueReadBuffer");
-
-    // Release OpenCL resources (buffers, kernel, program, etc.)
-    clReleaseMemObject(dev_buffer);
-    clReleaseMemObject(dev_zimg);
-    clReleaseKernel(fillZeroPaddedArrayKernel);
-    clReleaseProgram(program;
-}
 void gpu_lsci(uint16_t buffer[BUFFER_SIZE]) {
     cl_int error;
     size_t global_size[2] = {wi, h}; // Set your global work size here
