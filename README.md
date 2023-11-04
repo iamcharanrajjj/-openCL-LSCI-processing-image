@@ -1,65 +1,60 @@
-# OpenCL Image Processing 
+# Laser Speckle Contrast Imaging (LSCI) Program
 
-This program is designed to perform various image processing operations using OpenCL for accelerated GPU computations and Aravis for webcam/camera interfacing.
+This repository contains a program that leverages OpenCL to perform Laser Speckle Contrast Imaging (LSCI). LSCI is a powerful, non-invasive bio-imaging technique for assessing blood flow dynamics in tissue.
 
-## Contents
-- Introduction
-- Source Files
-- Prerequisites
-- How the code works
-- Usage
-- License
+The program initialises a Aravis-supported camera, captures an image, and then performs the LSCI on the GPU using OpenCL. The processed images are then written to disk.
 
-### Introduction
+## Source Files
 
-This project performs operations like reading from an image, converting it to grayscale, and processing it via the OpenCL kernels. It also uses a camera for capturing an image, processes it using OpenCL and the Aravis library, and serves as an ideal starting point for developing more complex vision-based applications.
+The source code is mainly composed of a single file `lsci.c`.
 
-### Source Files
+The file contains several functions to perform various operations on captured images such as normalizing the image, computing the average variance, converting grayscale to RGB, and more. The core logic resides in the OpenCL kernels filled in the constant string `source_str`.
 
-1. `main.c` contains the main function and the OpenCL image processing operations.
+## Dependencies
+* OpenCL
+* [Aravis](https://github.com/AravisProject/aravis)
+* C standard libraries
 
-### Prerequisites
+## How To Compile The Code
 
-To build this project, you will need to have the following libraries installed:
+To compile this program, you will need to have OpenCL and the Aravis library installed in your system. Once you have these installed, you can use a gcc compiler to compile the `lsci.c` file:
 
-1. [OpenCL](https://www.khronos.org/opencl/)
-2. [Aravis](https://github.com/AravisProject/aravis) (For camera interfacing)
-3. [libpng](http://www.libpng.org/pub/png/libpng.html) (For saving images in PNG format)
+```
+gcc -o lsci lsci.c `pkg-config --cflags --libs aravis-* opencl`
+```
 
-### How the code works
+## How To Run
+After successful compilation, you can run the program using:
 
-This code performs a grayscale conversion on an image. The image is initially read into a buffer, then copied into a new buffer where the processing will be done.
+```
+./lsci
+```
 
-For input, the program expects a raw 16-bit grayscale image.
+## How The Program Works
 
-The `clock_t start, end` global variables are used to measure the time taken for the image processing operations.
+1. The program first initializes the camera and captures images from it.
+2. The captured images are then sent to the GPU for LSCI processing. The following steps are performed on each image:
+    - The image is padded with zeros to match the window size.
+    - Computation and normalisation of speckle contrast image.
+    - Application of colormap to the grayscale image.
+    - Computation of average speckle contrast image for ensemble averaging.
 
-In the `main` function, memory is allocated for the output image, and the original image is processed by an OpenCL kernel. This kernel increments every pixel value of the image by one. The processed image is then saved in PNG format.
+The program also has the functionality to preview the processed images.
 
-There are two OpenCL kernels declared in the `programSource` string:
+## API Reference
 
-1. `convertToUInt16`: This kernel takes an input image buffer and an output data buffer and converts each pixel value to a 16-bit unsigned integer (uint).
-    
-2. `calculate_stats`: This kernel calculates the sum, mean, and deviation of window around each pixel in the image. The window size is defined by a macro `WINDOW_SIZE`.
+- `int main(void)`: The main function from which the program is started.
+- `camerainit()`: Initiates the camera and sets the proper settings.
+- `camera()`: Captures images from the camera.
+- `gpu_init()`: Establishes a connection with the OpenCL device.
+- `gpu_lsci(uint16_t *buffer)`: Sends the data to the GPU, executes the kernel, and retrieves the result.
 
-The `range_min` and `range_max` variables are used as the upper and lower bounds of the window size for calculating the mean and deviation.
+## Caution
 
-Each OpenCL kernel is run on the GPU with a 2D global work size defined by the IMAGE_WIDTH and IMAGE_HEIGHT constants.
+This code is not ready for use in a production environment. It is a prototype created for demonstration and illustrative purposes.
 
-The processed 16-bit image data is then converted back into an 8-bit image, and a lookup table is applied to it to generate an RGB image.
+The error handling in the code is not complete and in certain failure scenarios, the program may not clean up properly or crash.
 
-The Grayscale image is then written to a png file.
+## License
 
-This process is run for every frame that is captured from the camera.
-
-### Usage
-
--  Set up your environment to be able to compile OpenCL code
--  Install Aravis to interface with the camera
--  Compile the code using your OpenCL compiler
--  Run the program on images or a camera
--  The processed images will be saved as PNG files
-
-### License
-
-This project is released under the MIT License.
+The code in this repository is available under the [MIT License](https://opensource.org/licenses/MIT). Please see the [LICENSE](./LICENSE) file for details.
